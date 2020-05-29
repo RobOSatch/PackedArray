@@ -38,20 +38,21 @@ public:
 		for (int i = 0; i < MAX_MESH_COUNT; ++i)
 		{
 			m_accessArray[i] = i + 1;
+			m_accessLookup[i] = -1;
 		}
 	}
 		
 	// Needs to be O(1)
 	MeshID AddMesh(void)
 	{
-		// TODO: add your implementation here.
-		// thoroughly comment *what* you do, and *why* you do it (in english).
+		// Gets the next meshID by reading the accessArray and then updates the accessArray and the accessLookup
 
 		// update ID
 		unsigned int meshID = m_nextID;
 		m_nextID = m_accessArray[meshID];
 
 		m_accessArray[meshID] = m_meshCount;
+		m_accessLookup[m_meshCount] = meshID;
 		m_meshes[m_meshCount++] = Mesh();
 
 		return meshID;
@@ -61,37 +62,35 @@ public:
 	// Needs to be O(1)
 	void RemoveMesh(MeshID id)
 	{
-		// TODO: add your implementation here.
-		// thoroughly comment *what* you do, and *why* you do it (in english).
-
+		// Get the meshID of the mesh to delete and then the accessID of the mesh, which is going to shift to its place.
 		unsigned int meshToDelete = m_accessArray[id];
+		int shiftedMeshAccessID = m_accessLookup[m_meshCount - 1];
 
-		// swap
+		// shift the last element into the deleteion gap. Then, fix the accessArray and the accessLookup and set the deleted one to -1.
 		m_meshes[meshToDelete] = m_meshes[m_meshCount - 1];
-		m_meshes[m_meshCount - 1].dummy = -1;
+		m_meshes[m_meshCount - 1].dummy = 0xcccccccc;
+		m_accessArray[shiftedMeshAccessID] = meshToDelete;
+		m_accessArray[id] = m_nextID;
+		m_accessLookup[meshToDelete] = m_accessLookup[m_meshCount - 1];
+		m_accessLookup[m_meshCount - 1] = -1;
 
-		// update index of swapped ID
-		m_accessArray[m_nextID - 1] = m_accessArray[id];
+		// Update the next id (LIFO queue)
+		m_nextID = id;
 
-
-		m_nextID = meshToDelete;
-
-		//decrease the amount of meshes in the scene
-		--m_meshCount; 
-
-		// TODO: debugging -> check if ID is valid
+		// decrease the count for the meshes in the scene
+		m_meshCount--; 
 	}
 
 
 	// Needs to be O(1)
 	Mesh* Lookup(MeshID id)
 	{
-		// TODO: add your implementation here.
-		// thoroughly comment *what* you do, and *why* you do it (in english).
-		//assert(id < MAX_MESH_COUNT);
-		//assert(&m_meshes[m_accessArray[id]] != nullptr);
+		// First, check if the mesh at the specified ID has been deleted or never set and if so, return a nullptr.
+		// Otherwise just return the mesh
 
-		if (m_meshes[m_accessArray[id]].dummy == -1)
+		unsigned int innerID = m_accessArray[id];
+
+		if (m_accessLookup[innerID] == -1)
 		{
 			return nullptr;
 		}
@@ -116,9 +115,9 @@ public:
 
 
 private:
-	// TODO: add other data structures you may need
 	MeshID m_nextID;
 	unsigned int m_accessArray[MAX_MESH_COUNT];
+	int m_accessLookup[MAX_MESH_COUNT];
 
 	// DO NOT CHANGE!
 	// these two members are here to stay. see comments regarding Iterate().
@@ -130,12 +129,6 @@ struct ID
 {
 	MeshID _accessID;
 	unsigned int _innerID;
-};
-
-// Maybe?!
-struct FullList
-{
-	FullList* head;
 };
 
 int main(void)
