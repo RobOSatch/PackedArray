@@ -45,12 +45,11 @@ public:
 	// Needs to be O(1)
 	MeshID AddMesh(void)
 	{
-		// Gets the next meshID by reading the accessArray and then updates the accessArray and the accessLookup
-
-		// update ID
+		// Update the next free meshID
 		unsigned int meshID = m_nextID;
 		m_nextID = m_accessArray[meshID];
 
+		// Store the meshes position in the m_meshes array in the acessArray. Then reflect that in the accessLookup.
 		m_accessArray[meshID] = m_meshCount;
 		m_accessLookup[m_meshCount] = meshID;
 		m_meshes[m_meshCount++] = Mesh();
@@ -62,13 +61,15 @@ public:
 	// Needs to be O(1)
 	void RemoveMesh(MeshID id)
 	{
-		// Get the meshID of the mesh to delete and then the accessID of the mesh, which is going to shift to its place.
+		// Get the meshID of the mesh marked for deletion and then the accessID of the mesh which is going to shift to its place.
 		unsigned int meshToDelete = m_accessArray[id];
 		int shiftedMeshAccessID = m_accessLookup[m_meshCount - 1];
 
-		// shift the last element into the deleteion gap. Then, fix the accessArray and the accessLookup and set the deleted one to -1.
+		// shift the last element into the deleteion gap. Then, mark the deleted mesh by resetting its dummy value.
 		m_meshes[meshToDelete] = m_meshes[m_meshCount - 1];
 		m_meshes[m_meshCount - 1].dummy = 0xcccccccc;
+
+		// Update the accessArray and the accessLookup to represent the changes made by the deletion.
 		m_accessArray[shiftedMeshAccessID] = meshToDelete;
 		m_accessArray[id] = m_nextID;
 		m_accessLookup[meshToDelete] = m_accessLookup[m_meshCount - 1];
@@ -87,7 +88,6 @@ public:
 	{
 		// First, check if the mesh at the specified ID has been deleted or never set and if so, return a nullptr.
 		// Otherwise just return the mesh
-
 		unsigned int innerID = m_accessArray[id];
 
 		if (m_accessLookup[innerID] == -1)
@@ -115,9 +115,9 @@ public:
 
 
 private:
-	MeshID m_nextID;
-	unsigned int m_accessArray[MAX_MESH_COUNT];
-	int m_accessLookup[MAX_MESH_COUNT];
+	MeshID m_nextID; // The next free meshID
+	unsigned int m_accessArray[MAX_MESH_COUNT]; // An array, mapping the meshIDs to the innerIDs of the m_meshes array
+	int m_accessLookup[MAX_MESH_COUNT]; // An array, mapping the innerIDs of the m_meshes array to the meshIDs.
 
 	// DO NOT CHANGE!
 	// these two members are here to stay. see comments regarding Iterate().
